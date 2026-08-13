@@ -1,4 +1,7 @@
-# 🧠 S.P.H.E.R.E.
+<div align="center">
+  <img src="logo.png" alt="S.P.H.E.R.E. Logo" width="300">
+</div>
+
 ### **Synchronized Psychiatric & Health Evaluation through Real-time Explainability**
 > *An Explainable Multimodal AI Framework for Objective Clinical Decision Support in Psychiatric Evaluation*
 
