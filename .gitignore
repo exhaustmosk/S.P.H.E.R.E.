@@ -18,9 +18,11 @@ __pycache__/
 .LSOverride
 ._*
 
-# Raw Multimedia Datasets (Large Files > 1GB)
+# Raw Multimedia Datasets & Large Artifacts (> 100MB)
 Audios/
 Extracted_images/
+dataset_splits/
+layer1_base_models.joblib
 
 # Large Model Dirs (AutoGluon bagged ensembles > 500MB)
 autogluon_models/

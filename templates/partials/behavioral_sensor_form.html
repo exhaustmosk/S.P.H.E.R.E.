@@ -1,0 +1,120 @@
+<!-- Partial: 18 Tabular Assessment Fields -->
+<div class="card" style="margin-top: 1rem; border-color: var(--border-light);">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <div>
+      <h3 class="card-title">18-field clinical parameter matrix</h3>
+      <p class="card-subtitle">Manually provide or adjust behavioral, acoustic, facial, and sensor metrics</p>
+    </div>
+    <button type="button" id="autofill-18-fields-btn" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8125rem;">
+      Autofill sample patient data
+    </button>
+  </div>
+
+  <!-- Group 1: Behavioral & Usage Metrics (6 fields) -->
+  <div style="margin-bottom: 1.5rem;">
+    <h4 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-primary); margin-bottom: 0.75rem; font-weight: 700;">
+      1. Behavioral & Mobile Usage Metrics
+    </h4>
+    <div class="form-grid-3col">
+      <div class="form-group">
+        <label class="form-label" for="sleep_quality">Sleep quality <span class="input-unit-badge">1–5 scale</span></label>
+        <input type="number" step="1" min="1" max="5" name="sleep_quality" id="sleep_quality" class="form-input" value="2" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="social_engagement">Social engagement <span class="input-unit-badge">1–5 scale</span></label>
+        <input type="number" step="1" min="1" max="5" name="social_engagement" id="social_engagement" class="form-input" value="5" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="daily_app_usage_min">Daily app usage <span class="input-unit-badge">minutes</span></label>
+        <input type="number" step="1" min="0" max="1000" name="daily_app_usage_min" id="daily_app_usage_min" class="form-input" value="202" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="typing_speed_wpm">Typing speed <span class="input-unit-badge">WPM</span></label>
+        <input type="number" step="1" min="5" max="200" name="typing_speed_wpm" id="typing_speed_wpm" class="form-input" value="40" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="session_frequency">Session frequency <span class="input-unit-badge">sessions/day</span></label>
+        <input type="number" step="1" min="0" max="100" name="session_frequency" id="session_frequency" class="form-input" value="18" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="idle_time_min">Idle time <span class="input-unit-badge">minutes</span></label>
+        <input type="number" step="1" min="0" max="600" name="idle_time_min" id="idle_time_min" class="form-input" value="138" required>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 2: Facial Expressive Dynamics (4 fields) -->
+  <div style="margin-bottom: 1.5rem;">
+    <h4 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-primary); margin-bottom: 0.75rem; font-weight: 700;">
+      2. Facial Expressive Dynamics
+    </h4>
+    <div class="form-grid-2col">
+      <div class="form-group">
+        <label class="form-label" for="facial_emotion_variance">Facial emotion variance <span class="input-unit-badge">0.0–1.0</span></label>
+        <input type="number" step="0.001" min="0" max="1" name="facial_emotion_variance" id="facial_emotion_variance" class="form-input" value="0.779" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="eye_blink_rate">Eye blink rate <span class="input-unit-badge">blinks/min</span></label>
+        <input type="number" step="1" min="0" max="60" name="eye_blink_rate" id="eye_blink_rate" class="form-input" value="14" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="smile_intensity">Smile intensity <span class="input-unit-badge">0.0–1.0</span></label>
+        <input type="number" step="0.001" min="0" max="1" name="smile_intensity" id="smile_intensity" class="form-input" value="0.020" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="head_motion_index">Head motion index <span class="input-unit-badge">0.0–1.0</span></label>
+        <input type="number" step="0.001" min="0" max="1" name="head_motion_index" id="head_motion_index" class="form-input" value="0.194" required>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 3: Acoustic & Speech Features (4 fields) -->
+  <div style="margin-bottom: 1.5rem;">
+    <h4 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-primary); margin-bottom: 0.75rem; font-weight: 700;">
+      3. Acoustic & Speech Features
+    </h4>
+    <div class="form-grid-2col">
+      <div class="form-group">
+        <label class="form-label" for="mfcc_mean">MFCC mean <span class="input-unit-badge">dB</span></label>
+        <input type="number" step="0.001" name="mfcc_mean" id="mfcc_mean" class="form-input" value="14.013" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="mfcc_variance">MFCC variance <span class="input-unit-badge">unitless</span></label>
+        <input type="number" step="0.001" min="0" name="mfcc_variance" id="mfcc_variance" class="form-input" value="5.610" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pitch_mean">Pitch mean (F0) <span class="input-unit-badge">Hz</span></label>
+        <input type="number" step="0.01" min="50" max="500" name="pitch_mean" id="pitch_mean" class="form-input" value="263.24" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="speech_rate">Speech rate <span class="input-unit-badge">syllables/sec</span></label>
+        <input type="number" step="0.01" min="0.5" max="10" name="speech_rate" id="speech_rate" class="form-input" value="4.77" required>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 4: Physiological Telemetry (4 fields) -->
+  <div>
+    <h4 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand-primary); margin-bottom: 0.75rem; font-weight: 700;">
+      4. Physiological Sensor Telemetry
+    </h4>
+    <div class="form-grid-2col">
+      <div class="form-group">
+        <label class="form-label" for="heart_rate_bpm">Heart rate <span class="input-unit-badge">BPM</span></label>
+        <input type="number" step="1" min="30" max="220" name="heart_rate_bpm" id="heart_rate_bpm" class="form-input" value="79" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="hrv_index">HRV index <span class="input-unit-badge">ms</span></label>
+        <input type="number" step="0.01" min="5" max="250" name="hrv_index" id="hrv_index" class="form-input" value="51.43" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="skin_temperature">Skin temperature <span class="input-unit-badge">°C</span></label>
+        <input type="number" step="0.01" min="25" max="45" name="skin_temperature" id="skin_temperature" class="form-input" value="34.28" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="gsr_level">GSR level <span class="input-unit-badge">µS</span></label>
+        <input type="number" step="0.001" min="0.01" max="20" name="gsr_level" id="gsr_level" class="form-input" value="0.976" required>
+      </div>
+    </div>
+  </div>
+</div>

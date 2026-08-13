@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 0 auto;">
+  <div style="margin-bottom: 2rem;">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8125rem; margin-bottom:1rem;">
+      ← Back to mode selection
+    </a>
+    <h1 style="font-size: 1.875rem; font-weight: 800; color: var(--text-primary);">Pre-recorded multimodal data ingestion</h1>
+    <p style="color: var(--text-muted); margin-top: 0.25rem;">
+      Upload existing multimodal patient artifacts or specify parameters directly to generate an instant clinical report.
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('pre_recorded') }}" enctype="multipart/form-data">
+    <input type="hidden" name="upload_type" id="upload_type_input" value="manual">
+
+    <!-- Card 1: Visual Artifact Ingestion -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">1. Facial visual recording</h2>
+        <p class="card-subtitle">Upload pre-recorded patient photo or representative video frame (.png, .jpg)</p>
+      </div>
+
+      <div class="dropzone" id="image-dropzone">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <div class="dropzone-title">Drag & drop facial image, or click to browse</div>
+        <div class="dropzone-desc">Accepts PNG, JPG, or JPEG format (Sample placeholder active by default)</div>
+        <input type="file" name="facial_image" id="prerecorded-image-input" class="dropzone-input" accept="image/png, image/jpeg">
+      </div>
+      <div id="image-file-preview">
+        <div class="file-preview-card">
+          <span><strong>Default profile:</strong> sample_patient_face.png (128 KB)</span>
+          <span style="color:#059669; font-weight:600;">✓ Ready</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Acoustic Artifact Ingestion -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">2. Speech acoustic recording</h2>
+        <p class="card-subtitle">Upload recorded reading prompt audio clip (.wav)</p>
+      </div>
+
+      <div class="dropzone" id="audio-dropzone">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <div class="dropzone-title">Drag & drop speech audio file, or click to browse</div>
+        <div class="dropzone-desc">Accepts uncompressed WAV or MP3 audio (Sample placeholder active by default)</div>
+        <input type="file" name="speech_audio" id="prerecorded-audio-input" class="dropzone-input" accept="audio/wav, audio/mpeg">
+      </div>
+      <div id="audio-file-preview">
+        <div class="file-preview-card">
+          <span><strong>Default profile:</strong> sample_patient_speech.wav (340 KB)</span>
+          <span style="color:#059669; font-weight:600;">✓ Ready</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Tabular Ingestion (Toggle between CSV vs 18 Manual Fields) -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-header">
+        <h2 class="card-title">3. Tabular patient telemetry & metrics</h2>
+        <p class="card-subtitle">Select input method for behavioral and physiological metrics</p>
+      </div>
+
+      <!-- Segmented Toggle -->
+      <div class="segmented-control">
+        <button type="button" class="segmented-option active" id="toggle-manual-mode">
+          Fill 18 fields manually
+        </button>
+        <button type="button" class="segmented-option" id="toggle-csv-mode">
+          Upload CSV row
+        </button>
+      </div>
+
+      <!-- Option A: CSV Ingestion -->
+      <div id="csv-upload-section" style="display: none;">
+        <div class="dropzone" id="csv-dropzone">
+          <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <div class="dropzone-title">Upload single-row CSV data file</div>
+          <div class="dropzone-desc">Must contain standard 18 multimodal feature columns</div>
+          <input type="file" name="csv_file" id="prerecorded-csv-input" class="dropzone-input" accept=".csv">
+        </div>
+        <div id="csv-file-preview"></div>
+        <div style="margin-top: 1rem; text-align: right;">
+          <a href="{{ url_for('sample_csv') }}" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.8125rem;">
+            Download sample CSV template
+          </a>
+        </div>
+      </div>
+
+      <!-- Option B: 18 Manual Fields Partial -->
+      <div id="manual-fields-section">
+        {% include "partials/behavioral_sensor_form.html" %}
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="nav-actions-dock">
+      <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary btn-large">
+        Generate assessment report
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

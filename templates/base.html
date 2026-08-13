@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title if title else "Multimodal Mental Health Assessment" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta name="description" content="Interactive front-end prototype for Multimodal Mental Health Assessment Tool integrating facial, speech, and behavioral signals.">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Global Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-wrapper">
+          <a href="{{ url_for('index') }}" style="display:flex; align-items:center; gap:0.75rem; color:inherit;">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div>
+              <div class="brand-title">MindFlow Multimodal</div>
+              <div class="brand-subtitle">Mental Health Assessment Prototype</div>
+            </div>
+          </a>
+        </div>
+
+        <div class="header-actions">
+          {% if step %}
+            <span class="mode-badge pulse">Live session in progress</span>
+          {% elif request.path == '/pre-recorded' %}
+            <span class="mode-badge">Pre-recorded ingestion</span>
+          {% elif request.path == '/report' %}
+            <span class="mode-badge" style="background:#ECFDF5; color:#059669; border-color:#A7F3D0;">Assessment complete</span>
+          {% endif %}
+          <a href="{{ url_for('reset_session') }}" class="btn btn-secondary" style="padding:0.4rem 0.85rem; font-size:0.8125rem;">
+            New assessment
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stepper Navigation Header (Active during Live Steps 1–4) -->
+    {% if step %}
+    <div class="stepper-container">
+      <div class="stepper-inner">
+        <div class="stepper-header-info">
+          <h1 class="stepper-title">
+            {% if step == 1 %}Step 1 of 4 — Facial video capture
+            {% elif step == 2 %}Step 2 of 4 — Speech audio capture
+            {% elif step == 3 %}Step 3 of 4 — Behavioral metrics survey
+            {% elif step == 4 %}Step 4 of 4 — Physiological sensor telemetry
+            {% endif %}
+          </h1>
+          <span class="stepper-count">{{ step * 25 }}% complete</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width: {{ step * 25 }}%;"></div>
+        </div>
+
+        <!-- Step Indicator Pills -->
+        <div class="stepper-pills">
+          <div class="step-pill {% if step == 1 %}active{% elif step > 1 %}completed{% endif %}">
+            <span class="step-pill-number">{% if step > 1 %}✓{% else %}1{% endif %}</span>
+            <span>Facial capture</span>
+          </div>
+          <div class="step-pill {% if step == 2 %}active{% elif step > 2 %}completed{% endif %}">
+            <span class="step-pill-number">{% if step > 2 %}✓{% else %}2{% endif %}</span>
+            <span>Speech capture</span>
+          </div>
+          <div class="step-pill {% if step == 3 %}active{% elif step > 3 %}completed{% endif %}">
+            <span class="step-pill-number">{% if step > 3 %}✓{% else %}3{% endif %}</span>
+            <span>Behavioral survey</span>
+          </div>
+          <div class="step-pill {% if step == 4 %}active{% endif %}">
+            <span class="step-pill-number">4</span>
+            <span>Physiological telemetry</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <div class="footer-top">
+          <div>
+            <strong>MindFlow Assessment System</strong> — Research Prototype Frontend
+          </div>
+          <div>
+            Zero Heavy ML Dependencies • High-Fidelity Front-End Workflow
+          </div>
+        </div>
+        <div class="footer-disclaimer">
+          <strong>Research Disclaimer:</strong> This web application is an interactive prototype designed for system evaluation and clinical workflow demonstration. It is not intended for primary diagnostic use or emergency mental health crisis intervention.
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Shared Global Script -->
+  <script src="{{ url_for('static', filename='js/navigation.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
