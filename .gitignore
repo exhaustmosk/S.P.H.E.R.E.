@@ -1,0 +1,34 @@
+# Virtual Environments
+.venv/
+.venv*/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Raw Multimedia Datasets (Large Files > 1GB)
+Audios/
+Extracted_images/
+
+# Large Model Dirs (AutoGluon bagged ensembles > 500MB)
+autogluon_models/
+autogluon_models_semantic/
+autogluon_models_umap/
+
+# IDE & Tooling
+.vscode/
+.idea/
+.agents/
+.gemini/
