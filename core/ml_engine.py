@@ -57,29 +57,44 @@ class MultimodalInferenceEngine:
         self.is_loaded = False
         self._load_artifacts()
 
+    def _find_file(self, filename, subdirs):
+        """Search for a file across given subdirectories or root."""
+        candidates = [
+            os.path.join(self.base_dir, filename),
+            os.path.join(os.path.dirname(__file__), "..", filename),
+        ]
+        for sub in subdirs:
+            candidates.append(os.path.join(self.base_dir, sub, filename))
+            candidates.append(os.path.join(os.path.dirname(__file__), "..", sub, filename))
+
+        for p in candidates:
+            if os.path.exists(p):
+                return p
+        return None
+
     def _load_artifacts(self):
         """Load trained XGBoost classifier, regressor, and embeddings."""
         try:
-            clf_path = os.path.join(self.base_dir, "xgb_classifier_head_A_smote.joblib")
-            if not os.path.exists(clf_path):
-                clf_path = os.path.join(self.base_dir, "xgb_classifier_head_A.joblib")
-            if os.path.exists(clf_path):
+            clf_path = self._find_file("xgb_classifier_head_A_smote.joblib", ["models"])
+            if not clf_path:
+                clf_path = self._find_file("xgb_classifier_head_A.joblib", ["models"])
+            if clf_path:
                 self.clf = joblib.load(clf_path)
 
-            reg_path = os.path.join(self.base_dir, "xgb_regressor_head_B.joblib")
-            if os.path.exists(reg_path):
+            reg_path = self._find_file("xgb_regressor_head_B.joblib", ["models"])
+            if reg_path:
                 self.reg = joblib.load(reg_path)
 
-            speech_path = os.path.join(self.base_dir, "speech_embeddings.npy")
-            if os.path.exists(speech_path):
+            speech_path = self._find_file("speech_embeddings.npy", ["data"])
+            if speech_path:
                 self.speech_embeddings = np.load(speech_path)
 
-            facial_path = os.path.join(self.base_dir, "facial_embeddings.npy")
-            if os.path.exists(facial_path):
+            facial_path = self._find_file("facial_embeddings.npy", ["data"])
+            if facial_path:
                 self.facial_embeddings = np.load(facial_path)
 
             self.is_loaded = True
-            print("✓ MultimodalInferenceEngine: Real models loaded successfully.")
+            print("✓ MultimodalInferenceEngine: Real models loaded successfully from models/ & data/.")
         except Exception as e:
             print(f"⚠ MultimodalInferenceEngine: Error loading model artifacts ({e}).")
             self.is_loaded = False

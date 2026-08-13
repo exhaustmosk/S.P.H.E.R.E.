@@ -181,7 +181,7 @@ def pre_recorded():
     return render_template("pre_recorded.html", title="Pre-Recorded Data Ingestion")
 
 
-from feature_extractor import extract_facial_metrics
+from core.feature_extractor import extract_facial_metrics
 
 
 @app.route("/live/step1", methods=["GET", "POST"])
@@ -272,7 +272,7 @@ def live_step4():
     return render_template("live_step4.html", title="Step 4 of 4 — Physiological Sensors", step=4)
 
 
-from ml_engine import ml_engine
+from core.ml_engine import ml_engine
 
 
 @app.route("/report")

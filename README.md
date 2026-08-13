@@ -99,31 +99,70 @@ Traditional psychiatric assessments rely heavily on subjective questionnaires (e
 
 ```bash
 S.P.H.E.R.E./
-├── GUI/                                      # Full Interactive Web Interface
-│   ├── app.py                               # Flask Application Server
-│   ├── static/                              # Stylesheets and frontend scripts
-│   └── templates/                           # Interactive HTML5 step-by-step diagnostic UI
+├── app.py                             # Main Flask Web Application entry point
+├── requirements.txt                   # Production & ML dependencies
+├── README.md                          # Comprehensive Documentation
+├── .gitignore                         # Git exclusion rules
 │
-├── autogluon_semantic_stacking_pipeline.py  # Master end-to-end training & SHAP script
-├── evaluate_models.py                       # Standalone model evaluation & report generator
-├── generate_master_deck.py                  # Programmatic PowerPoint presentation generator
-├── extract_speech_embeddings.py             # Wav2Vec 2.0 deep acoustic extractor (1024-d)
-├── extract_facial_embeddings.py             # Vision Transformer visual affect extractor (768-d)
+├── core/                              # Core ML & Inference Engine
+│   ├── __init__.py
+│   ├── ml_engine.py                   # MultimodalInferenceEngine (Live XGBoost inference)
+│   └── feature_extractor.py           # Real-time computer vision & acoustic feature extraction
 │
-├── Multimodal_Psychiatric_AI_Deck.pptx      # 9-Slide Publication-Ready Presentation Deck
-├── final_aligned_confusion_matrix.png       # Test set confusion matrix visualization
-├── modality_attribution_bar_chart_semantic.png # Global TreeSHAP modality attribution chart
-├── top_15_shap_features_semantic.png        # Top 15 predictive clinical features
+├── models/                            # Trained Serialized Model Artifacts & Preprocessors
+│   ├── xgb_classifier_head_A_smote.joblib # 4-Class Mental Health Status Classifier
+│   ├── xgb_regressor_head_B.joblib    # MultiOutput continuous severity regressor
+│   ├── head_B_regressor_semantic.joblib
+│   ├── pca_speech_semantic.joblib     # Fitted speech PCA transformer
+│   ├── pca_facial_semantic.joblib     # Fitted facial PCA transformer
+│   ├── standard_scaler_semantic.joblib# Fitted numerical feature scaler
+│   └── shap_xgb_proxy_semantic.joblib # Serialized TreeSHAP proxy model
 │
-├── numerical_data.csv                       # 4,000-sample physiological/behavioral cohort
-├── speech_metadata.csv                      # RAVDESS acoustic emotion labels
-├── facial_metadata.csv                      # FER2013 visual emotion labels
+├── data/                              # Tabular Datasets & Pre-computed Embeddings
+│   ├── numerical_data.csv             # 4,000-sample physiological/behavioral cohort
+│   ├── speech_metadata.csv            # RAVDESS acoustic emotion annotations
+│   ├── facial_metadata.csv            # FER2013 visual emotion annotations
+│   ├── speech_embeddings.npy          # Wav2Vec 2.0 acoustic embeddings (11MB)
+│   └── facial_embeddings.npy          # Vision Transformer facial embeddings (84MB)
 │
-├── head_B_regressor_semantic.joblib         # Serialized MultiOutput severity regressor
-├── pca_speech_semantic.joblib               # Fitted 32-d speech PCA transformer
-├── pca_facial_semantic.joblib               # Fitted 32-d facial PCA transformer
-├── standard_scaler_semantic.joblib          # Fitted numerical feature scaler
-└── shap_xgb_proxy_semantic.joblib           # Serialized TreeSHAP proxy model
+├── pipelines/                         # Model Training, Stacking & Evaluation Pipelines
+│   ├── autogluon_semantic_stacking_pipeline.py
+│   ├── autogluon_stacking_pipeline.py
+│   ├── sequential_stacking_pipeline_v2.py
+│   ├── sequential_stacking_pipeline.py
+│   ├── train_xgboost_smote.py
+│   ├── train_xgboost.py
+│   ├── evaluate_models.py
+│   ├── explainability.py
+│   ├── extract_facial_embeddings.py
+│   ├── extract_speech_embeddings.py
+│   ├── merge_multimodal_dataset.py
+│   └── system_check.py
+│
+├── static/                            # Frontend Assets & Stylesheets
+│   ├── css/
+│   │   └── style.css                  # Medical-tech design system
+│   ├── js/
+│   │   ├── camera.js                  # Webcam capture & canvas stream
+│   │   ├── audio.js                   # Web Audio API recorder & pitch analyser
+│   │   └── navigation.js              # Step-by-step validation & form gating
+│   └── images/
+│       ├── logo.png
+│       ├── final_aligned_confusion_matrix.png
+│       ├── modality_attribution_bar_chart_semantic.png
+│       └── top_15_shap_features_semantic.png
+│
+└── templates/                         # Interactive HTML5 Diagnostic UI
+    ├── base.html                      # Layout shell with progress tracker
+    ├── mode_select.html               # Mode selection (Live vs Pre-Recorded)
+    ├── live_step1.html                # Step 1: Facial Video & Snapshot Capture
+    ├── live_step2.html                # Step 2: Speech Audio & Prompt Reading
+    ├── live_step3.html                # Step 3: 6-Slider Behavioral Survey
+    ├── live_step4.html                # Step 4: Physiological Wearable Telemetry
+    ├── pre_recorded.html              # Pre-recorded batch ingestion form
+    ├── report.html                    # Clinical Assessment Dashboard (Objectives 1, 2, 3)
+    └── partials/
+        └── behavioral_sensor_form.html
 ```
 
 ---
@@ -136,34 +175,27 @@ S.P.H.E.R.E./
 git clone https://github.com/exhaustmosk/S.P.H.E.R.E..git
 cd S.P.H.E.R.E.
 
-# Create and activate Python 3.12 environment
-python3.12 -m venv .venv
+# Create and activate Python virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# Install core dependencies
-pip install autogluon.tabular xgboost lightgbm shap scikit-learn seaborn matplotlib pandas numpy joblib python-pptx
-```
-
-### 2. Run Master Training & Explainability Pipeline
-```bash
-python autogluon_semantic_stacking_pipeline.py
-```
-
-### 3. Generate Evaluation Report & Figures
-```bash
-python evaluate_models.py
-```
-
-### 4. Build Presentation Deck
-```bash
-python generate_master_deck.py
-```
-
-### 5. Launch Interactive Clinical GUI
-```bash
-cd GUI
+# Install dependencies
 pip install -r requirements.txt
-python app.py
+```
+
+### 2. Launch Interactive Web Application
+```bash
+python3 app.py
+```
+Open **`http://127.0.0.1:5001`** in your browser to run the live diagnostic wizard.
+
+### 3. Run Pipeline Evaluation & Training
+```bash
+# Standalone evaluation
+python3 pipelines/evaluate_models.py
+
+# SHAP Explainability analysis
+python3 pipelines/explainability.py
 ```
 
 ---
