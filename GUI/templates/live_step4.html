@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Step 4 of 4 — Sensors{% endblock %}
+{% block page %}live-step4{% endblock %}
+{% block content %}
+  {% include "partials/stepper.html" %}
+  <h1 class="page-title">Step 4 of 4 — Wearable / sensor readings</h1>
+  <p class="lede">All four fields are optional. Skip if you do not have a wearable or known values.</p>
+
+  <form class="card" method="post" novalidate>
+    {% include "partials/sensor_fields.html" %}
+    <div class="card-actions">
+      <a class="btn btn-secondary" href="{{ back_url }}">Back</a>
+      <button class="btn btn-ghost" type="submit" name="skip" value="1">Skip</button>
+      <button class="btn" id="next-btn" type="submit">See report</button>
+    </div>
+    <p class="helper" id="next-helper" hidden></p>
+  </form>
+{% endblock %}

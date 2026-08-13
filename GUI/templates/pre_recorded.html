@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Pre-recorded data — Mental health assessment{% endblock %}
+{% block page %}pre-recorded{% endblock %}
+{% block content %}
+  <h1 class="page-title">Use pre-recorded data</h1>
+  <p class="lede">Provide an image, an audio clip, and either one CSV row of the 18 tabular features or the same manual fields used in live testing.</p>
+
+  <form id="flow-form" class="card form-stack" method="post" enctype="multipart/form-data" novalidate>
+    <div class="field">
+      <label for="image-file">Image file</label>
+      <p class="hint">Face photo or short video still. Not processed in this preview.</p>
+      <input id="image-file" name="image_file" type="file" accept="image/*,video/*">
+    </div>
+
+    <div class="field">
+      <label for="audio-file">Audio file</label>
+      <p class="hint">Spoken sample. Not processed in this preview.</p>
+      <input id="audio-file" name="audio_file" type="file" accept="audio/*">
+    </div>
+
+    <div>
+      <p class="slider-head">Tabular features</p>
+      <div class="segmented">
+        <label>
+          <input type="radio" name="tabular_mode" value="csv" checked>
+          Upload a CSV row
+        </label>
+        <label>
+          <input type="radio" name="tabular_mode" value="manual">
+          Fill the fields manually
+        </label>
+      </div>
+    </div>
+
+    <div id="csv-panel">
+      <div class="field">
+        <label for="csv-file">CSV file</label>
+        <p class="hint">One row is enough. Expected columns:</p>
+        <input id="csv-file" name="csv_file" type="file" accept=".csv,text/csv">
+        <pre class="csv-cols">{{ csv_columns | join(", ") }}</pre>
+      </div>
+    </div>
+
+    <div id="manual-panel" class="hidden">
+      {% include "partials/behavioral_fields.html" %}
+      <div class="field-spaced">
+        {% include "partials/sensor_fields.html" %}
+      </div>
+    </div>
+
+    <div class="card-actions">
+      <a class="btn btn-secondary" href="{{ url_for('index') }}">Back</a>
+      <button class="btn" id="next-btn" type="submit" disabled>See report</button>
+    </div>
+    <p class="helper" id="next-helper">Choose an image file to continue.</p>
+  </form>
+{% endblock %}

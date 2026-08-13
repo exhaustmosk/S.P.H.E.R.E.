@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Step 3 of 4 — Behaviour{% endblock %}
+{% block page %}live-step3{% endblock %}
+{% block content %}
+  {% include "partials/stepper.html" %}
+  <h1 class="page-title">Step 3 of 4 — Behavioural signals</h1>
+  <p class="lede">Move each slider at least once. Anchors describe the ends of the scale — these are not multiple-choice buttons.</p>
+
+  <form id="flow-form" class="card" method="post" novalidate>
+    {% include "partials/behavioral_fields.html" %}
+    <div class="card-actions">
+      <a class="btn btn-secondary" href="{{ back_url }}">Back</a>
+      <button class="btn" id="next-btn" type="submit" disabled>Next</button>
+    </div>
+    <p class="helper" id="next-helper">Move every slider at least once before continuing.</p>
+  </form>
+{% endblock %}
