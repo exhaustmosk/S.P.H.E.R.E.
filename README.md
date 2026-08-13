@@ -167,8 +167,7 @@ python app.py
 
 ## 👥 Research & Engineering Team
 * **Akshaj S.** — Lead AI Engineer & Machine Learning Architect
-* **Gautam Girish** — Computer Vision & Deep Learning Specialist
-* **Abid Roshan** — Audio Signal Processing & Acoustic Engineer
-* **Jacob S. Mathew** — Full-Stack Interface & Systems Integration
+* **Pranshu Verma** — Computer Vision & Deep Learning Specialist
 
-*Department of Mechanical Engineering (Open Elective) — SRM Institute of Science and Technology (SRMIST)*
+
+*Department of DSBS — SRM Institute of Science and Technology (SRMIST)*
