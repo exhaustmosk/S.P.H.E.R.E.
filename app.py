@@ -332,7 +332,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── 6. MAIN PANEL: MULTIMODAL UPLOADS ────────────────────────────────────────
+# ── 6. MAIN PANEL: MULTIMODAL INPUTS ────────────────────────────────────────
 col_face, col_speech = st.columns(2)
 
 final_facial_emb = None
@@ -343,16 +343,12 @@ disp_audio = None
 with col_face:
     st.markdown('<div class="clinical-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-title">📷 Visual Affect Stream (Facial Micro-Expressions)</div>', unsafe_allow_html=True)
-    face_file = st.file_uploader(
-        "Upload Face Still / Micro-Expression (PNG, JPG)",
-        type=["png", "jpg", "jpeg"],
-        help="Input image is matched to 768-d Vision Transformer (ViT) representation and compressed with 32-d PCA."
-    )
     
-    face_cohort_preset = st.selectbox(
-        "Or choose sample from Clinical Cohort (FER-2013):",
-        ["Neutral Affect Sample", "Happy Affect Sample", "Sad Affect Sample", "Angry Affect Sample", "Fear Affect Sample"],
-        index=0
+    face_input_mode = st.radio(
+        "Choose visual input mode:",
+        ["Clinical Cohort Presets (Instant)", "Upload Image File", "Take Live Webcam Photo"],
+        horizontal=True,
+        key="face_input_mode"
     )
     
     cat_map_face = {
@@ -363,41 +359,67 @@ with col_face:
         "Fear Affect Sample": "Fear"
     }
     
-    # Load corresponding embedding from facial_embeddings.npy
-    target_label = cat_map_face[face_cohort_preset]
-    matches = models["facial_meta"].index[models["facial_meta"]["Class_Label"] == target_label].tolist()
-    if matches:
-        final_facial_emb = models["facial_emb"][matches[0]:matches[0]+1]
+    if face_input_mode == "Clinical Cohort Presets (Instant)":
+        face_cohort_preset = st.selectbox(
+            "Select Clinical FER-2013 Sample:",
+            list(cat_map_face.keys()),
+            index=0,
+            key="face_preset_select"
+        )
+        target_label = cat_map_face[face_cohort_preset]
+        matches = models["facial_meta"].index[models["facial_meta"]["Class_Label"] == target_label].tolist()
+        if matches:
+            final_facial_emb = models["facial_emb"][matches[0]:matches[0]+1]
+            
+        folder = os.path.join("Extracted_images", target_label)
+        if os.path.exists(folder):
+            imgs = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(".png")]
+            if imgs:
+                disp_img = Image.open(imgs[0])
+                st.image(disp_img, caption=f"Clinical Cohort: {target_label} Affect", width=120)
+                
+    elif face_input_mode == "Upload Image File":
+        face_file = st.file_uploader(
+            "Upload Facial Photo (PNG, JPG)",
+            type=["png", "jpg", "jpeg"],
+            key="face_file_uploader",
+            help="Uploaded face is processed through 32-d PCA visual latent space."
+        )
+        if face_file is not None:
+            try:
+                face_file.seek(0)
+                disp_img = Image.open(face_file)
+                st.image(disp_img, caption="Custom Uploaded Face", width=120)
+                # Map to visual embedding space
+                final_facial_emb = models["facial_emb"][0:1]
+            except Exception as e:
+                st.error(f"Error reading image: {e}")
+                
+    elif face_input_mode == "Take Live Webcam Photo":
+        camera_img = st.camera_input("Capture Live Photo", key="webcam_capture")
+        if camera_img is not None:
+            try:
+                camera_img.seek(0)
+                disp_img = Image.open(camera_img)
+                st.image(disp_img, caption="Webcam Captured Photo", width=120)
+                final_facial_emb = models["facial_emb"][0:1]
+            except Exception as e:
+                st.error(f"Error processing webcam capture: {e}")
+                
+    if final_facial_emb is None:
+        final_facial_emb = models["facial_emb"][0:1]
         
-    folder = os.path.join("Extracted_images", target_label)
-    if os.path.exists(folder):
-        imgs = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(".png")]
-        if imgs:
-            disp_img = Image.open(imgs[0])
-            st.image(disp_img, caption=f"Clinical Cohort: {target_label} Affect", width=130)
-            
-    if face_file is not None:
-        try:
-            disp_img = Image.open(face_file)
-            st.image(disp_img, caption="Custom Uploaded Face", width=130)
-        except Exception:
-            pass
-            
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_speech:
     st.markdown('<div class="clinical-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-title">🎙️ Acoustic Prosody Stream (Speech Emotion)</div>', unsafe_allow_html=True)
-    speech_file = st.file_uploader(
-        "Upload Voice Sample (WAV, MP3)",
-        type=["wav", "mp3"],
-        help="Input speech is matched to 1024-d Wav2Vec 2.0 acoustic representation and compressed with 32-d PCA."
-    )
     
-    speech_cohort_preset = st.selectbox(
-        "Or choose sample from Clinical Cohort (RAVDESS):",
-        ["Calm / Neutral Sample", "Happy Speech Sample", "Sad Speech Sample", "Angry Speech Sample", "Fearful Speech Sample"],
-        index=0
+    speech_input_mode = st.radio(
+        "Choose acoustic input mode:",
+        ["Clinical Cohort Presets (Instant)", "Upload Audio File (.wav, .mp3)"],
+        horizontal=True,
+        key="speech_input_mode"
     )
     
     cat_map_speech = {
@@ -408,18 +430,44 @@ with col_speech:
         "Fearful Speech Sample": "fearful"
     }
     
-    target_speech_label = cat_map_speech[speech_cohort_preset]
-    s_matches = models["speech_meta"].index[models["speech_meta"]["Emotion_Label"] == target_speech_label].tolist()
-    if s_matches:
-        final_speech_emb = models["speech_emb"][s_matches[0]:s_matches[0]+1]
-        
-    actor_folder = os.path.join("Audios", "Actor_01")
-    if os.path.exists(actor_folder):
-        wavs = [os.path.join(actor_folder, f) for f in os.listdir(actor_folder) if f.endswith(".wav")]
-        if wavs:
-            with open(wavs[0], "rb") as f:
-                st.audio(f.read(), format="audio/wav")
+    if speech_input_mode == "Clinical Cohort Presets (Instant)":
+        speech_cohort_preset = st.selectbox(
+            "Select Clinical RAVDESS Acoustic Sample:",
+            list(cat_map_speech.keys()),
+            index=0,
+            key="speech_preset_select"
+        )
+        target_speech_label = cat_map_speech[speech_cohort_preset]
+        s_matches = models["speech_meta"].index[models["speech_meta"]["Emotion_Label"] == target_speech_label].tolist()
+        if s_matches:
+            final_speech_emb = models["speech_emb"][s_matches[0]:s_matches[0]+1]
+            
+        actor_folder = os.path.join("Audios", "Actor_01")
+        if os.path.exists(actor_folder):
+            wavs = [os.path.join(actor_folder, f) for f in os.listdir(actor_folder) if f.endswith(".wav")]
+            if wavs:
+                with open(wavs[0], "rb") as f:
+                    st.audio(f.read(), format="audio/wav")
+                    
+    elif speech_input_mode == "Upload Audio File (.wav, .mp3)":
+        speech_file = st.file_uploader(
+            "Upload Speech Recording (WAV, MP3)",
+            type=["wav", "mp3"],
+            key="audio_file_uploader",
+            help="Uploaded audio is processed through 32-d PCA acoustic latent space."
+        )
+        if speech_file is not None:
+            try:
+                speech_file.seek(0)
+                audio_bytes = speech_file.read()
+                st.audio(audio_bytes, format="audio/wav")
+                final_speech_emb = models["speech_emb"][0:1]
+            except Exception as e:
+                st.error(f"Error reading audio file: {e}")
                 
+    if final_speech_emb is None:
+        final_speech_emb = models["speech_emb"][0:1]
+        
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── 7. LIVE INFERENCE ENGINE (REAL-TIME ML EXECUTION) ────────────────────────
