@@ -122,6 +122,10 @@
         sessionStorage.setItem("live_video_present", "1");
       } catch (e) {}
       markCaptured(true);
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([blob], "capture.webm", { type: blob.type }));
+      fileInput.files = dataTransfer.files;
     }
 
     captureBtn.addEventListener("click", function () {
@@ -273,6 +277,10 @@
       } catch (e) {}
       markCaptured(true);
       drawIdle();
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([blob], "capture.webm", { type: blob.type }));
+      fileInput.files = dataTransfer.files;
     }
 
     async function startRecording() {

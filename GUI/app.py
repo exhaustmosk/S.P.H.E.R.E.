@@ -21,6 +21,10 @@ GET  /report           Full layout with MOCK_REPORT
 """
 
 from flask import Flask, redirect, render_template, request, session, url_for
+import os
+import csv
+from werkzeug.utils import secure_filename
+from inference import run_inference
 
 app = Flask(__name__)
 app.secret_key = "gui-preview-only-not-a-secret"
@@ -200,6 +204,37 @@ def index():
 def pre_recorded():
     if request.method == "POST":
         session["mode"] = "pre-recorded"
+        
+        # 1. Save media
+        img = request.files.get("image_file")
+        audio = request.files.get("audio_file")
+        
+        img_path = "/tmp/" + secure_filename(img.filename)
+        img.save(img_path)
+        
+        audio_path = "/tmp/" + secure_filename(audio.filename)
+        audio.save(audio_path)
+        
+        # 2. Get tabular dict
+        tabular_dict = {}
+        tmode = request.form.get("tabular_mode")
+        if tmode == "csv":
+            csv_file = request.files.get("csv_file")
+            csv_path = "/tmp/" + secure_filename(csv_file.filename)
+            csv_file.save(csv_path)
+            with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                row = next(reader)
+                for k in CSV_COLUMNS:
+                    tabular_dict[k] = row.get(k, 0)
+        else:
+            for k in CSV_COLUMNS:
+                tabular_dict[k] = request.form.get(k, 0)
+                
+        # 3. Run inference
+        report = run_inference(img_path, audio_path, tabular_dict)
+        session["real_report"] = report
+        
         return redirect(url_for("report"))
     return render_template("pre_recorded.html", **_form_context())
 
@@ -208,6 +243,11 @@ def pre_recorded():
 def live_step1():
     if request.method == "POST":
         session["mode"] = "live"
+        vf = request.files.get("video_file")
+        if vf and vf.filename:
+            path = "/tmp/live_" + secure_filename(vf.filename)
+            vf.save(path)
+            session["live_video_path"] = path
         return redirect(url_for("live_step2"))
     return render_template(
         "live_step1.html",
@@ -219,6 +259,11 @@ def live_step1():
 def live_step2():
     if request.method == "POST":
         session["mode"] = "live"
+        af = request.files.get("audio_file")
+        if af and af.filename:
+            path = "/tmp/live_" + secure_filename(af.filename)
+            af.save(path)
+            session["live_audio_path"] = path
         return redirect(url_for("live_step3"))
     return render_template(
         "live_step2.html",
@@ -234,6 +279,9 @@ def live_step2():
 def live_step3():
     if request.method == "POST":
         session["mode"] = "live"
+        # store behavioural
+        for f in BEHAVIORAL_FIELDS:
+            session[f"live_{f['name']}"] = request.form.get(f['name'], 0)
         return redirect(url_for("live_step4"))
     return render_template(
         "live_step3.html",
@@ -249,6 +297,22 @@ def live_step3():
 def live_step4():
     if request.method == "POST":
         session["mode"] = "live"
+        # 1. Get sensors
+        for f in SENSOR_FIELDS:
+            session[f"live_{f['name']}"] = request.form.get(f['name'], 0)
+            
+        # 2. Build tabular dict
+        tabular_dict = {}
+        for col in CSV_COLUMNS:
+            tabular_dict[col] = session.get(f"live_{col}", 0)
+            
+        # 3. Run inference
+        img_path = session.get("live_video_path", "")
+        audio_path = session.get("live_audio_path", "")
+        
+        report = run_inference(img_path, audio_path, tabular_dict)
+        session["real_report"] = report
+        
         return redirect(url_for("report"))
     return render_template(
         "live_step4.html",
@@ -262,7 +326,7 @@ def live_step4():
 
 @app.route("/report")
 def report():
-    mock = MOCK_REPORT
+    mock = session.get("real_report", MOCK_REPORT)
     return render_template(
         "report.html",
         mock=mock,
@@ -270,5 +334,9 @@ def report():
     )
 
 
+from inference import run_inference, init_models
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    print("Pre-loading machine learning models...")
+    init_models()
+    app.run(debug=True, use_reloader=False)
