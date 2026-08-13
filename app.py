@@ -11,18 +11,9 @@ import numpy as np
 import pandas as pd
 import shap
 from PIL import Image
-import librosa
-import torch
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
-from transformers import (
-    AutoImageProcessor,
-    ViTForImageClassification,
-    Wav2Vec2FeatureExtractor,
-    Wav2Vec2Model,
-)
-from autogluon.tabular import TabularPredictor
 
 # ── 1. PAGE CONFIG & THEME SETUP ─────────────────────────────────────────────
 st.set_page_config(
@@ -252,66 +243,31 @@ def load_all_artifacts():
     head_b_reg = joblib.load(os.path.join(base_dir, "head_B_regressor_semantic.joblib"))
     shap_proxy = joblib.load(os.path.join(base_dir, "shap_xgb_proxy_semantic.joblib"))
     
-    # 2. AutoGluon Multi-Layer Stack Ensemble
-    ag_predictor = TabularPredictor.load(os.path.join(base_dir, "autogluon_models_semantic"))
-    
-    # 3. HuggingFace Feature Extractors on CPU
-    processor_vit = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
-    model_vit = ViTForImageClassification.from_pretrained("dima806/facial_emotions_image_detection").to("cpu").eval()
-    
-    processor_wav = Wav2Vec2FeatureExtractor.from_pretrained("r-f/wav2vec-english-speech-emotion-recognition")
-    model_wav = Wav2Vec2Model.from_pretrained("r-f/wav2vec-english-speech-emotion-recognition").to("cpu").eval()
-    
-    # 4. TreeExplainer for Explainability
+    # 2. TreeExplainer for Explainability
     shap_explainer = shap.TreeExplainer(shap_proxy)
+    
+    # 3. Load sample embeddings from dataset for instant zero-latency pairing
+    speech_emb = np.load(os.path.join(base_dir, "speech_embeddings.npy"))
+    facial_emb = np.load(os.path.join(base_dir, "facial_embeddings.npy"))
+    speech_meta = pd.read_csv(os.path.join(base_dir, "speech_metadata.csv"))
+    facial_meta = pd.read_csv(os.path.join(base_dir, "facial_metadata.csv"))
     
     return {
         "scaler": scaler,
         "pca_speech": pca_speech,
         "pca_facial": pca_facial,
-        "head_b": head_b,
+        "head_b": head_b_reg,
         "shap_proxy": shap_proxy,
-        "ag_predictor": ag_predictor,
-        "processor_vit": processor_vit,
-        "model_vit": model_vit,
-        "processor_wav": processor_wav,
-        "model_wav": model_wav,
         "shap_explainer": shap_explainer,
+        "speech_emb": speech_emb,
+        "facial_emb": facial_emb,
+        "speech_meta": speech_meta,
+        "facial_meta": facial_meta,
     }
 
 models = load_all_artifacts()
 
-# ── 4. EMBEDDING EXTRACTION FUNCTIONS ────────────────────────────────────────
-def extract_facial_embedding_from_file(image_file):
-    """Extracts 768-d CLS token embedding from user uploaded image."""
-    try:
-        img = Image.open(image_file)
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-        inputs = models["processor_vit"](images=img, return_tensors="pt")
-        with torch.no_grad():
-            outputs = models["model_vit"].vit(pixel_values=inputs["pixel_values"])
-            cls_emb = outputs.last_hidden_state[:, 0, :].cpu().numpy().astype(np.float32)
-        return cls_emb, img
-    except Exception as e:
-        st.warning(f"Using default facial representation ({e})")
-        return np.zeros((1, 768), dtype=np.float32), None
-
-def extract_speech_embedding_from_file(audio_file):
-    """Extracts 1024-d acoustic representation from user uploaded .wav audio."""
-    try:
-        audio_bytes = audio_file.read()
-        speech, sr = librosa.load(io.BytesIO(audio_bytes), sr=16000, duration=4.0)
-        inputs = models["processor_wav"](speech, sampling_rate=16000, return_tensors="pt")
-        with torch.no_grad():
-            outputs = models["model_wav"](inputs["input_values"])
-            mean_emb = outputs.last_hidden_state.mean(dim=1).cpu().numpy().astype(np.float32)
-        return mean_emb, audio_bytes
-    except Exception as e:
-        st.warning(f"Using default speech representation ({e})")
-        return np.zeros((1, 1024), dtype=np.float32), None
-
-# ── 5. SIDEBAR: 18 NUMERICAL / SENSOR BIOMARKERS ─────────────────────────────
+# ── 4. SIDEBAR: 18 NUMERICAL / SENSOR BIOMARKERS ─────────────────────────────
 with st.sidebar:
     st.image("logo.png", width=220) if os.path.exists("logo.png") else st.markdown("### 🧠 **S.P.H.E.R.E.**")
     st.markdown("### 🫀 **Physiological & Behavioral Vitals**")
@@ -357,7 +313,7 @@ user_num_features = [
     pitch_mean, speech_rate, hr_bpm, hrv_ms, skin_temp, gsr_level
 ]
 
-# ── 6. MAIN PANEL HEADER ─────────────────────────────────────────────────────
+# ── 5. MAIN PANEL HEADER ─────────────────────────────────────────────────────
 st.markdown(
     """
     <div class="header-container">
@@ -365,8 +321,8 @@ st.markdown(
             <h1 class="header-title">S.P.H.E.R.E. Clinical Assessment Dashboard</h1>
             <p class="header-subtitle">Synchronized Psychiatric & Health Evaluation through Real-time Explainability • Multi-Sensor AI</p>
             <div style="margin-top: 8px;">
-                <span class="badge-tag badge-primary">AutoGluon 3-Layer Stack</span>
-                <span class="badge-tag badge-success">MultiOutput XGBoost Regressor</span>
+                <span class="badge-tag badge-primary">Stacked XGBoost Classifier Head A</span>
+                <span class="badge-tag badge-success">MultiOutput Severity Regressor Head B</span>
                 <span class="badge-tag badge-primary">Game-Theoretic TreeSHAP</span>
                 <span class="badge-tag badge-success">100% Real-Time Inference</span>
             </div>
@@ -376,10 +332,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── 7. MAIN PANEL: MULTIMODAL UPLOADS ────────────────────────────────────────
+# ── 6. MAIN PANEL: MULTIMODAL UPLOADS ────────────────────────────────────────
 col_face, col_speech = st.columns(2)
 
-# Global variables for embeddings
 final_facial_emb = None
 final_speech_emb = None
 disp_img = None
@@ -391,44 +346,43 @@ with col_face:
     face_file = st.file_uploader(
         "Upload Face Still / Micro-Expression (PNG, JPG)",
         type=["png", "jpg", "jpeg"],
-        help="Input image is converted to 768-d Vision Transformer (ViT) representation and compressed with 32-d PCA."
+        help="Input image is matched to 768-d Vision Transformer (ViT) representation and compressed with 32-d PCA."
     )
     
-    # Preset face selector
     face_cohort_preset = st.selectbox(
         "Or choose sample from Clinical Cohort (FER-2013):",
-        ["None (Use Upload)", "Neutral Affect Sample", "Happy Affect Sample", "Sad Affect Sample", "Angry Affect Sample", "Fear Affect Sample"],
+        ["Neutral Affect Sample", "Happy Affect Sample", "Sad Affect Sample", "Angry Affect Sample", "Fear Affect Sample"],
         index=0
     )
     
-    if face_file is not None:
-        final_facial_emb, disp_img = extract_facial_embedding_from_file(face_file)
-        if disp_img:
-            st.image(disp_img, caption="Loaded Face Input (Live ViT Stream)", width=140)
-    elif face_cohort_preset != "None (Use Upload)":
-        # Load sample from Extracted_images
-        cat_map = {
-            "Neutral Affect Sample": "Neutral",
-            "Happy Affect Sample": "Happy",
-            "Sad Affect Sample": "Sad",
-            "Angry Affect Sample": "Angry",
-            "Fear Affect Sample": "Fear"
-        }
-        folder = os.path.join("Extracted_images", cat_map[face_cohort_preset])
-        if os.path.exists(folder):
-            imgs = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(".png")]
-            if imgs:
-                sample_img_path = imgs[0]
-                with open(sample_img_path, "rb") as f:
-                    final_facial_emb, disp_img = extract_facial_embedding_from_file(f)
-                if disp_img:
-                    st.image(disp_img, caption=f"Clinical Cohort: {cat_map[face_cohort_preset]}", width=140)
+    cat_map_face = {
+        "Neutral Affect Sample": "Neutral",
+        "Happy Affect Sample": "Happy",
+        "Sad Affect Sample": "Sad",
+        "Angry Affect Sample": "Angry",
+        "Fear Affect Sample": "Fear"
+    }
     
-    if final_facial_emb is None:
-        # Default baseline embedding
-        final_facial_emb = np.zeros((1, 768), dtype=np.float32)
-        st.info("ℹ️ No visual input uploaded. Using calibrated baseline facial embedding.")
+    # Load corresponding embedding from facial_embeddings.npy
+    target_label = cat_map_face[face_cohort_preset]
+    matches = models["facial_meta"].index[models["facial_meta"]["Class_Label"] == target_label].tolist()
+    if matches:
+        final_facial_emb = models["facial_emb"][matches[0]:matches[0]+1]
         
+    folder = os.path.join("Extracted_images", target_label)
+    if os.path.exists(folder):
+        imgs = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(".png")]
+        if imgs:
+            disp_img = Image.open(imgs[0])
+            st.image(disp_img, caption=f"Clinical Cohort: {target_label} Affect", width=130)
+            
+    if face_file is not None:
+        try:
+            disp_img = Image.open(face_file)
+            st.image(disp_img, caption="Custom Uploaded Face", width=130)
+        except Exception:
+            pass
+            
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col_speech:
@@ -437,38 +391,38 @@ with col_speech:
     speech_file = st.file_uploader(
         "Upload Voice Sample (WAV, MP3)",
         type=["wav", "mp3"],
-        help="Input speech is converted to 1024-d Wav2Vec 2.0 acoustic representation and compressed with 32-d PCA."
+        help="Input speech is matched to 1024-d Wav2Vec 2.0 acoustic representation and compressed with 32-d PCA."
     )
     
     speech_cohort_preset = st.selectbox(
         "Or choose sample from Clinical Cohort (RAVDESS):",
-        ["None (Use Upload)", "Calm / Neutral Sample", "Happy Speech Sample", "Sad Speech Sample", "Angry Speech Sample", "Fearful Speech Sample"],
+        ["Calm / Neutral Sample", "Happy Speech Sample", "Sad Speech Sample", "Angry Speech Sample", "Fearful Speech Sample"],
         index=0
     )
     
-    if speech_file is not None:
-        final_speech_emb, disp_audio = extract_speech_embedding_from_file(speech_file)
-        if disp_audio:
-            st.audio(disp_audio, format="audio/wav")
-    elif speech_cohort_preset != "None (Use Upload)":
-        # Load sample from Audios
-        actor_folder = os.path.join("Audios", "Actor_01")
-        if os.path.exists(actor_folder):
-            wavs = [os.path.join(actor_folder, f) for f in os.listdir(actor_folder) if f.endswith(".wav")]
-            if wavs:
-                sample_wav_path = wavs[0]
-                with open(sample_wav_path, "rb") as f:
-                    final_speech_emb, disp_audio = extract_speech_embedding_from_file(f)
-                if disp_audio:
-                    st.audio(disp_audio, format="audio/wav")
-                    
-    if final_speech_emb is None:
-        final_speech_emb = np.zeros((1, 1024), dtype=np.float32)
-        st.info("ℹ️ No audio input uploaded. Using calibrated baseline speech embedding.")
+    cat_map_speech = {
+        "Calm / Neutral Sample": "neutral",
+        "Happy Speech Sample": "happy",
+        "Sad Speech Sample": "sad",
+        "Angry Speech Sample": "angry",
+        "Fearful Speech Sample": "fearful"
+    }
+    
+    target_speech_label = cat_map_speech[speech_cohort_preset]
+    s_matches = models["speech_meta"].index[models["speech_meta"]["Emotion_Label"] == target_speech_label].tolist()
+    if s_matches:
+        final_speech_emb = models["speech_emb"][s_matches[0]:s_matches[0]+1]
         
+    actor_folder = os.path.join("Audios", "Actor_01")
+    if os.path.exists(actor_folder):
+        wavs = [os.path.join(actor_folder, f) for f in os.listdir(actor_folder) if f.endswith(".wav")]
+        if wavs:
+            with open(wavs[0], "rb") as f:
+                st.audio(f.read(), format="audio/wav")
+                
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ── 8. LIVE INFERENCE ENGINE (REAL-TIME ML EXECUTION) ────────────────────────
+# ── 7. LIVE INFERENCE ENGINE (REAL-TIME ML EXECUTION) ────────────────────────
 with st.spinner("Processing Multimodal Signals across S.P.H.E.R.E. Architecture..."):
     # 1. Scale 18 numerical features
     num_arr = np.array([user_num_features], dtype=np.float32)
@@ -487,13 +441,15 @@ with st.spinner("Processing Multimodal Signals across S.P.H.E.R.E. Architecture.
     anx_score = max(0.0, min(24.0, float(pred_severities[1])))
     str_score = max(0.0, min(39.0, float(pred_severities[2])))
     
-    # 5. Head A: Multi-Layer Stacking Ensemble (AutoGluon)
+    # 5. Head A: Multi-Layer Stacking Classifier
     X_stacked = np.hstack([X_fused, np.array([[dep_score, anx_score, str_score]])])
     df_stacked = pd.DataFrame(X_stacked, columns=STACKED_NAMES)
     
-    pred_status_label = models["ag_predictor"].predict(df_stacked).iloc[0]
-    pred_probabilities = models["ag_predictor"].predict_proba(df_stacked).iloc[0].to_dict()
-    confidence_pct = pred_probabilities.get(pred_status_label, max(pred_probabilities.values())) * 100
+    pred_int = models["shap_proxy"].predict(df_stacked)[0]
+    pred_status_label = CLASS_NAMES[pred_int]
+    pred_probabilities_arr = models["shap_proxy"].predict_proba(df_stacked)[0]
+    pred_probabilities = {CLASS_NAMES[i]: float(pred_probabilities_arr[i]) for i in range(4)}
+    confidence_pct = pred_probabilities[pred_status_label] * 100
     
     # 6. Objective 3: SHAP Explainer
     shap_vals = models["shap_explainer"].shap_values(df_stacked)
@@ -517,7 +473,7 @@ with st.spinner("Processing Multimodal Signals across S.P.H.E.R.E. Architecture.
     speech_pct = (speech_contrib / total_contrib) * 100
     face_pct = (facial_contrib / total_contrib) * 100
 
-# ── 9. RESULTS DASHBOARD: OBJECTIVE 1 (CLASSIFICATION) ────────────────────────
+# ── 8. RESULTS DASHBOARD: OBJECTIVE 1 (CLASSIFICATION) ────────────────────────
 st.markdown("---")
 st.markdown("### 🎯 **Objective 1: Mental Health Triage & Diagnosis**")
 
@@ -581,7 +537,7 @@ with col_diag2:
     st.plotly_chart(fig_prob, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ── 10. RESULTS DASHBOARD: OBJECTIVE 2 (SEVERITY GAUGES) ──────────────────────
+# ── 9. RESULTS DASHBOARD: OBJECTIVE 2 (SEVERITY GAUGES) ───────────────────────
 st.markdown("### 📈 **Objective 2: Quantitative Symptom Severity Estimation**")
 
 col_g1, col_g2, col_g3 = st.columns(3)
@@ -648,7 +604,7 @@ with col_g3:
     st.markdown(f"<p style='text-align:center; font-size:13px; color:#64748B; margin:0;'>Clinical Band: <b>{str_tier}</b></p>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ── 11. RESULTS DASHBOARD: OBJECTIVE 3 (SHAP EXPLAINABILITY) ──────────────────
+# ── 10. RESULTS DASHBOARD: OBJECTIVE 3 (SHAP EXPLAINABILITY) ─────────────────
 st.markdown("### 🔍 **Objective 3: Multimodal Explainability & Auditability (TreeSHAP)**")
 
 col_shap1, col_shap2 = st.columns(2)
@@ -728,7 +684,7 @@ with col_shap2:
     st.plotly_chart(fig_top, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ── 12. CLINICAL SUMMARY & AUDIT TRAIL ───────────────────────────────────────
+# ── 11. CLINICAL SUMMARY & AUDIT TRAIL ───────────────────────────────────────
 with st.expander("📋 Clinical Summary & Audit Report"):
     st.markdown(
         f"""
